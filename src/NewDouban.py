@@ -88,7 +88,6 @@ class DoubanBookLoader:
 class DoubanBookHtmlParser:
     def __init__(self):
         self.id_pattern = re.compile(".*/subject/(\\d+)/?")
-        self.series_pattern = re.compile(".*/series/(\\d+)/?")
 
     def parse_book(self, url, book_content):
         book = {}
