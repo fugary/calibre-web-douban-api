@@ -12,9 +12,9 @@
 
 ### 使用方法（已废弃）
 
-修改`src/douban.py`中的`doubanUrl`地址后，复制`src/douban.py`到`calibre-web/cps/metadata_provider/`目录下，重启项目。
+~~修改`src/douban.py`中的`doubanUrl`地址后，复制`src/douban.py`到`calibre-web/cps/metadata_provider/`目录下，重启项目。~~
 
-**注意：由于豆瓣api已经不开放使用了，这个豆瓣api需要连接`simple-boot-douban-api`使用**
+~~由于豆瓣api已经不开放使用了，这个豆瓣api需要连接`simple-boot-douban-api`使用~~
 
 
 

@@ -1,4 +1,6 @@
 import re
+import time
+
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, unquote
@@ -78,8 +80,10 @@ class DoubanBookLoader:
     @lru_cache(maxsize=DOUBAN_BOOK_CACHE_SIZE)
     def load_book(self, url):
         book = None
+        start_time = time.time()
         res = requests.get(url, headers=DEFAULT_HEADERS)
         if res.status_code in [200, 201]:
+            print("下载书籍:{}成功,耗时{:.0f}ms".format(url, (time.time() - start_time) * 1000))
             book_detail_content = res.content
             book = self.book_parser.parse_book(url, book_detail_content.decode("utf8"))
         return book
