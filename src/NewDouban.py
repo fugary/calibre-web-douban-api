@@ -147,10 +147,10 @@ class DoubanBookHtmlParser:
             text = element[0].text.strip()
         elif isinstance(element, etree._Element) and element.text:
             text = element.text.strip()
-        return text
+        return text if text else default_str
 
     def get_tail(self, element, default_str=''):
         text = default_str
         if isinstance(element, etree._Element) and element.tail:
             text = element.tail.strip()
-        return text
+        return text if text else default_str
