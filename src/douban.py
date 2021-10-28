@@ -24,7 +24,7 @@ class Douban(Metadata):
                 v['publisher'] = r.get('publisher', "")
                 v['publishedDate'] = r.get('pubdate', "")
                 v['tags'] = [tag.get('name', '') for tag in r.get('tags', [])]
-                v['rating'] = r['rating'].get('average', 0)
+                v['rating'] = float(r['rating'].get('average', '0')) / 2
                 if r.get('image'):
                     v['cover'] = r.get('image')
                 else:
