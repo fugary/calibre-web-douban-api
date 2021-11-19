@@ -107,11 +107,16 @@ class DoubanBookHtmlParser:
             book['id'] = id_match.group(1)
         img_element = html.xpath("//a[@class='nbg']")
         if len(img_element):
-            book['cover'] = img_element[0].attrib['href']
+            cover = img_element[0].attrib['href']
+            if not cover or cover.endswith('update_image'):
+                book['cover'] = ''
+            else:
+                book['cover'] = cover
         rating_element = html.xpath("//strong[@property='v:average']")
         book['rating'] = self.get_rating(rating_element)
         elements = html.xpath("//span[@class='pl']")
         book['authors'] = []
+        book['publisher'] = ''
         for element in elements:
             text = self.get_text(element)
             if text.startswith("作者"):
