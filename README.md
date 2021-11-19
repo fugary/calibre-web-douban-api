@@ -10,6 +10,8 @@
 
 此应用是基于Python抓取网页的形式获取书籍信息，频率过高访问可能被屏蔽。
 
+参考文档：https://fugary.com/?p=238
+
 ### 使用方法（已废弃）
 
 ~~修改`src/douban.py`中的`doubanUrl`地址后，复制`src/douban.py`到`calibre-web/cps/metadata_provider/`目录下，重启项目。~~
