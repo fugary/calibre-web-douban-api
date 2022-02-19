@@ -120,9 +120,9 @@ class DoubanBookHtmlParser:
         for element in elements:
             text = self.get_text(element)
             if text.startswith("作者"):
-                book['authors'].extend([self.get_text(author_element) for author_element in element.findall("..//a")])
+                book['authors'].extend([self.get_text(author_element) for author_element in filter(self.author_filter, element.findall("..//a"))])
             elif text.startswith("译者"):
-                book['authors'].extend([self.get_text(author_element) for author_element in element.findall("..//a")])
+                book['authors'].extend([self.get_text(author_element) for author_element in filter(self.author_filter, element.findall("..//a"))])
             elif text.startswith("出版社"):
                 book['publisher'] = self.get_tail(element)
             elif text.startswith("副标题"):
@@ -147,6 +147,10 @@ class DoubanBookHtmlParser:
 
     def get_rating(self, rating_element):
         return float(self.get_text(rating_element, '0')) / 2
+
+    def author_filter(self, a_element):
+        a_href = a_element.attrib['href']
+        return '/author' in a_href
 
     def get_text(self, element, default_str=''):
         text = default_str
