@@ -150,7 +150,7 @@ class DoubanBookHtmlParser:
 
     def author_filter(self, a_element):
         a_href = a_element.attrib['href']
-        return '/author' in a_href
+        return '/author' in a_href or '/search' in a_href
 
     def get_text(self, element, default_str=''):
         text = default_str
