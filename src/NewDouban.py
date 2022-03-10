@@ -164,4 +164,6 @@ class DoubanBookHtmlParser:
         text = default_str
         if isinstance(element, etree._Element) and element.tail:
             text = element.tail.strip()
+            if not text:
+                text = self.get_text(element.getnext(), default_str)
         return text if text else default_str
