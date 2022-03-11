@@ -7,7 +7,7 @@ from urllib.parse import urlparse, unquote
 from lxml import etree
 from functools import lru_cache
 
-from cps.services.Metadata import Metadata
+from cps.services.Metadata import Metadata, MetaSourceInfo, MetaRecord
 
 DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search"
 DOUBAN_BOOK_CAT = "1001"
@@ -28,7 +28,7 @@ class NewDouban(Metadata):
         self.searcher = DoubanBookSearcher()
         super().__init__()
 
-    def search(self, query, generic_cover=""):
+    def search(self, query: str, generic_cover: str = "", locale: str = "en"):
         if self.active:
             return self.searcher.search_books(query)
 
@@ -94,55 +94,58 @@ class DoubanBookHtmlParser:
         self.id_pattern = re.compile(".*/subject/(\\d+)/?")
 
     def parse_book(self, url, book_content):
-        book = {}
+        book = MetaRecord(
+            id="",
+            title="",
+            authors=[],
+            publisher="",
+            description="",
+            url="",
+            source=MetaSourceInfo(
+                id=PROVIDER_ID,
+                description=PROVIDER_NAME,
+                link="https://book.douban.com/"
+            )
+        )
         html = etree.HTML(book_content)
         title_element = html.xpath("//span[@property='v:itemreviewed']")
-        book['title'] = self.get_text(title_element)
+        book.title = self.get_text(title_element)
         share_element = html.xpath("//a[@data-url]")
         if len(share_element):
             url = share_element[0].attrib['data-url']
-        book['url'] = url
+        book.url = url
         id_match = self.id_pattern.match(url)
         if id_match:
-            book['id'] = id_match.group(1)
+            book.id = id_match.group(1)
         img_element = html.xpath("//a[@class='nbg']")
         if len(img_element):
             cover = img_element[0].attrib['href']
             if not cover or cover.endswith('update_image'):
-                book['cover'] = ''
+                book.cover = ''
             else:
-                book['cover'] = cover
+                book.cover = cover
         rating_element = html.xpath("//strong[@property='v:average']")
-        book['rating'] = self.get_rating(rating_element)
+        book.rating = self.get_rating(rating_element)
         elements = html.xpath("//span[@class='pl']")
-        book['authors'] = []
-        book['publisher'] = ''
         for element in elements:
             text = self.get_text(element)
-            if text.startswith("作者"):
-                book['authors'].extend([self.get_text(author_element) for author_element in filter(self.author_filter, element.findall("..//a"))])
-            elif text.startswith("译者"):
-                book['authors'].extend([self.get_text(author_element) for author_element in filter(self.author_filter, element.findall("..//a"))])
+            if text.startswith("作者") or text.startswith("译者"):
+                book.authors.extend([self.get_text(author_element) for author_element in
+                                     filter(self.author_filter, element.findall("..//a"))])
             elif text.startswith("出版社"):
-                book['publisher'] = self.get_tail(element)
+                book.publisher = self.get_tail(element)
             elif text.startswith("副标题"):
-                book['title'] = book['title'] + ':' + self.get_tail(element)
+                book.title = book.title + ':' + self.get_tail(element)
             elif text.startswith("出版年"):
-                book['publishedDate'] = self.get_tail(element)
+                book.publishedDate = self.get_tail(element)
             elif text.startswith("丛书"):
-                book['series'] = self.get_text(element.getnext())
+                book.series = self.get_text(element.getnext())
         summary_element = html.xpath("//div[@id='link-report']//div[@class='intro']")
-        book['description'] = ''
         if len(summary_element):
-            book['description'] = etree.tostring(summary_element[-1], encoding="utf8").decode("utf8").strip()
+            book.description = etree.tostring(summary_element[-1], encoding="utf8").decode("utf8").strip()
         tag_elements = html.xpath("//a[contains(@class, 'tag')]")
         if len(tag_elements):
-            book['tags'] = [self.get_text(tag_element) for tag_element in tag_elements]
-        book['source'] = {
-            "id": PROVIDER_ID,
-            "description": PROVIDER_NAME,
-            "link": "https://book.douban.com/"
-        }
+            book.tags = [self.get_text(tag_element) for tag_element in tag_elements]
         return book
 
     def get_rating(self, rating_element):

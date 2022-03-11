@@ -4,7 +4,7 @@
 
 此项目是添加一个豆瓣api provider实现，需要放到metadata_provider目录下
 
-### 使用方法（新）
+### 使用方法
 
 复制`src/NewDouban.py`到`calibre-web/cps/metadata_provider/`目录下，重启项目即可。
 
@@ -12,11 +12,9 @@
 
 参考文档：https://fugary.com/?p=238
 
-### 使用方法（已废弃）
+**新版calibre-web 0.6.17以上使用**
 
-~~修改`src/douban.py`中的`doubanUrl`地址后，复制`src/douban.py`到`calibre-web/cps/metadata_provider/`目录下，重启项目。~~
-
-~~由于豆瓣api已经不开放使用了，这个豆瓣api需要连接`simple-boot-douban-api`使用~~
+小于0.6.17版本，请下载：https://github.com/fugary/calibre-web-douban-api/releases/tag/0.6.16
 
 
 

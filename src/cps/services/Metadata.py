@@ -17,11 +17,50 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # 从calibre-web复制出来，方便测试使用
-class Metadata():
+import abc
+import dataclasses
+import os
+from typing import Dict, List, Optional, Union
+
+
+@dataclasses.dataclass
+class MetaSourceInfo:
+    id: str
+    description: str
+    link: str
+
+
+@dataclasses.dataclass
+class MetaRecord:
+    id: Union[str, int]
+    title: str
+    authors: List[str]
+    url: str
+    source: MetaSourceInfo
+    cover: str = os.path.join("", 'generic_cover.jpg')
+    description: Optional[str] = ""
+    series: Optional[str] = None
+    series_index: Optional[Union[int, float]] = 0
+    identifiers: Dict[str, Union[str, int]] = dataclasses.field(default_factory=dict)
+    publisher: Optional[str] = None
+    publishedDate: Optional[str] = None
+    rating: Optional[int] = 0
+    languages: Optional[List[str]] = dataclasses.field(default_factory=list)
+    tags: Optional[List[str]] = dataclasses.field(default_factory=list)
+
+
+class Metadata:
     __name__ = "Generic"
+    __id__ = "generic"
 
     def __init__(self):
         self.active = True
 
     def set_status(self, state):
         self.active = state
+
+    @abc.abstractmethod
+    def search(
+            self, query: str, generic_cover: str = "", locale: str = "cn"
+    ) -> Optional[List[MetaRecord]]:
+        pass
