@@ -92,6 +92,7 @@ class DoubanBookLoader:
 class DoubanBookHtmlParser:
     def __init__(self):
         self.id_pattern = re.compile(".*/subject/(\\d+)/?")
+        self.date_pattern = re.compile("(\\d{4})-(\\d+)")
 
     def parse_book(self, url, book_content):
         book = MetaRecord(
@@ -137,7 +138,7 @@ class DoubanBookHtmlParser:
             elif text.startswith("副标题"):
                 book.title = book.title + ':' + self.get_tail(element)
             elif text.startswith("出版年"):
-                book.publishedDate = self.get_tail(element)
+                book.publishedDate = self.get_publish_date(self.get_tail(element))
             elif text.startswith("丛书"):
                 book.series = self.get_text(element.getnext())
         summary_element = html.xpath("//div[@id='link-report']//div[@class='intro']")
@@ -147,6 +148,13 @@ class DoubanBookHtmlParser:
         if len(tag_elements):
             book.tags = [self.get_text(tag_element) for tag_element in tag_elements]
         return book
+
+    def get_publish_date(self, date_str):
+        if date_str:
+            date_match = self.date_pattern.fullmatch(date_str)
+            if date_match:
+                date_str = "{}-{}-1".format(date_match.group(1), date_match.group(2))
+        return date_str
 
     def get_rating(self, rating_element):
         return float(self.get_text(rating_element, '0')) / 2
