@@ -93,6 +93,7 @@ class DoubanBookHtmlParser:
     def __init__(self):
         self.id_pattern = re.compile(".*/subject/(\\d+)/?")
         self.date_pattern = re.compile("(\\d{4})-(\\d+)")
+        self.tag_pattern = re.compile("criteria = '(.+)'")
 
     def parse_book(self, url, book_content):
         book = MetaRecord(
@@ -147,7 +148,16 @@ class DoubanBookHtmlParser:
         tag_elements = html.xpath("//a[contains(@class, 'tag')]")
         if len(tag_elements):
             book.tags = [self.get_text(tag_element) for tag_element in tag_elements]
+        else:
+            book.tags = self.get_tags(book_content)
         return book
+
+    def get_tags(self, book_content):
+        tag_match = self.tag_pattern.findall(book_content)
+        if len(tag_match):
+            return [tag.replace('7:', '') for tag in
+                    filter(lambda tag: tag and tag.startswith('7:'), tag_match[0].split('|'))]
+        return []
 
     def get_publish_date(self, date_str):
         if date_str:
