@@ -13,6 +13,7 @@ DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search"
 DOUBAN_BOOK_CAT = "1001"
 DOUBAN_BOOK_CACHE_SIZE = 500  # 最大缓存数量
 DOUBAN_CONCURRENCY_SIZE = 5  # 并发查询数
+DOUBAN_BOOK_URL_PATTERN = re.compile(".*/subject/(\\d+)/?")
 DEFAULT_HEADERS = {
     'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3573.0 Safari/537.36'
 }
@@ -43,7 +44,8 @@ class DoubanBookSearcher:
         query = urlparse(href).query
         params = {item.split('=')[0]: item.split('=')[1] for item in query.split('&')}
         url = unquote(params['url'])
-        return url
+        if DOUBAN_BOOK_URL_PATTERN.match(url):
+            return url
 
     def load_book_urls(self, query):
         url = DOUBAN_SEARCH_JSON_URL
@@ -52,13 +54,15 @@ class DoubanBookSearcher:
         book_urls = []
         if res.status_code in [200, 201]:
             book_list_content = res.json()
-            for item in book_list_content['items'][0:DOUBAN_CONCURRENCY_SIZE]:  # 获取部分数据，默认5条
-                html = etree.HTML(item)
-                a = html.xpath('//a[@class="nbg"]')
-                if len(a):
-                    href = a[0].attrib['href']
-                    parsed = self.calc_url(href)
-                    book_urls.append(parsed)
+            for item in book_list_content['items']:
+                if len(book_urls) < DOUBAN_CONCURRENCY_SIZE: # 获取部分数据，默认5条
+                    html = etree.HTML(item)
+                    a = html.xpath('//a[@class="nbg"]')
+                    if len(a):
+                        href = a[0].attrib['href']
+                        parsed = self.calc_url(href)
+                        if parsed:
+                            book_urls.append(parsed)
         return book_urls
 
     def search_books(self, query):
@@ -91,7 +95,7 @@ class DoubanBookLoader:
 
 class DoubanBookHtmlParser:
     def __init__(self):
-        self.id_pattern = re.compile(".*/subject/(\\d+)/?")
+        self.id_pattern = DOUBAN_BOOK_URL_PATTERN
         self.date_pattern = re.compile("(\\d{4})-(\\d+)")
         self.tag_pattern = re.compile("criteria = '(.+)'")
 
