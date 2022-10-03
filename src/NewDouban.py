@@ -9,7 +9,9 @@ from functools import lru_cache
 
 from cps.services.Metadata import Metadata, MetaSourceInfo, MetaRecord
 
-DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search"
+DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search" # 最新豆瓣屏蔽此url
+DOUBAN_SEARCH_URL = "https://www.douban.com/search"
+DOUBAN_SEARCH_NEW_MODE = True
 DOUBAN_BOOK_CAT = "1001"
 DOUBAN_BOOK_CACHE_SIZE = 500  # 最大缓存数量
 DOUBAN_CONCURRENCY_SIZE = 5  # 并发查询数
@@ -65,8 +67,27 @@ class DoubanBookSearcher:
                             book_urls.append(parsed)
         return book_urls
 
+    def load_book_urls_new(self, query):
+        url = DOUBAN_SEARCH_URL
+        params = {"cat": DOUBAN_BOOK_CAT, "q": query}
+        res = requests.get(url, params, headers=DEFAULT_HEADERS)
+        book_urls = []
+        if res.status_code in [200, 201]:
+            html = etree.HTML(res.content)
+            alist = html.xpath('//a[@class="nbg"]')
+            for link in alist:
+                href = link.attrib['href']
+                parsed = self.calc_url(href)
+                if parsed:
+                    if len(book_urls) < DOUBAN_CONCURRENCY_SIZE:
+                        book_urls.append(parsed)
+        return book_urls
+
     def search_books(self, query):
-        book_urls = self.load_book_urls(query)
+        if DOUBAN_SEARCH_NEW_MODE:
+            book_urls = self.load_book_urls_new(query)
+        else:
+            book_urls = self.load_book_urls(query)
         books = []
         futures = [self.thread_pool.submit(self.book_loader.load_book, book_url) for book_url in book_urls]
         for future in as_completed(futures):
