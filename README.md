@@ -1,5 +1,9 @@
 # calibre-web-douban-api
 
+**2022-10-08**
+
+原douban列表url被屏蔽，老版本不能访问，建议更新最新的[NewDouban.py](https://github.com/fugary/calibre-web-douban-api/releases/download/v1.1.0/NewDouban.py)
+
 **2022-08-10**
 
 **最新V0.6.19版本的calbire-web的豆瓣插件已经回来了，除了标签外，应该都有数据了，可以不用此插件了**
