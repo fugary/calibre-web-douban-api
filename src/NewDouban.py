@@ -167,6 +167,8 @@ class DoubanBookHtmlParser:
                 book.publishedDate = self.get_publish_date(self.get_tail(element))
             elif text.startswith("丛书"):
                 book.series = self.get_text(element.getnext())
+            elif text.startswith("ISBN"):
+                book.identifiers["isbn"] = self.get_tail(element)
         summary_element = html.xpath("//div[@id='link-report']//div[@class='intro']")
         if len(summary_element):
             book.description = etree.tostring(summary_element[-1], encoding="utf8").decode("utf8").strip()
