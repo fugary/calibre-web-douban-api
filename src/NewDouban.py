@@ -1,3 +1,4 @@
+import random
 import re
 import time
 
@@ -11,13 +12,13 @@ from cps.services.Metadata import Metadata, MetaSourceInfo, MetaRecord
 
 DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search" # 最新豆瓣屏蔽此url
 DOUBAN_SEARCH_URL = "https://www.douban.com/search"
-DOUBAN_SEARCH_NEW_MODE = True
 DOUBAN_BOOK_CAT = "1001"
 DOUBAN_BOOK_CACHE_SIZE = 500  # 最大缓存数量
 DOUBAN_CONCURRENCY_SIZE = 5  # 并发查询数
 DOUBAN_BOOK_URL_PATTERN = re.compile(".*/subject/(\\d+)/?")
 DEFAULT_HEADERS = {
-    'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3573.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3573.0 Safari/537.36',
+    'Accept-Encoding': 'gzip, deflate'
 }
 PROVIDER_NAME = "New Douban Books"
 PROVIDER_ID = "new_douban"
@@ -49,24 +50,6 @@ class DoubanBookSearcher:
         if DOUBAN_BOOK_URL_PATTERN.match(url):
             return url
 
-    def load_book_urls(self, query):
-        url = DOUBAN_SEARCH_JSON_URL
-        params = {"start": 0, "cat": DOUBAN_BOOK_CAT, "q": query}
-        res = requests.get(url, params, headers=DEFAULT_HEADERS)
-        book_urls = []
-        if res.status_code in [200, 201]:
-            book_list_content = res.json()
-            for item in book_list_content['items']:
-                if len(book_urls) < DOUBAN_CONCURRENCY_SIZE: # 获取部分数据，默认5条
-                    html = etree.HTML(item)
-                    a = html.xpath('//a[@class="nbg"]')
-                    if len(a):
-                        href = a[0].attrib['href']
-                        parsed = self.calc_url(href)
-                        if parsed:
-                            book_urls.append(parsed)
-        return book_urls
-
     def load_book_urls_new(self, query):
         url = DOUBAN_SEARCH_URL
         params = {"cat": DOUBAN_BOOK_CAT, "q": query}
@@ -84,10 +67,7 @@ class DoubanBookSearcher:
         return book_urls
 
     def search_books(self, query):
-        if DOUBAN_SEARCH_NEW_MODE:
-            book_urls = self.load_book_urls_new(query)
-        else:
-            book_urls = self.load_book_urls(query)
+        book_urls = self.load_book_urls_new(query)
         books = []
         futures = [self.thread_pool.submit(self.book_loader.load_book, book_url) for book_url in book_urls]
         for future in as_completed(futures):
@@ -105,6 +85,7 @@ class DoubanBookLoader:
     @lru_cache(maxsize=DOUBAN_BOOK_CACHE_SIZE)
     def load_book(self, url):
         book = None
+        self.random_sleep()
         start_time = time.time()
         res = requests.get(url, headers=DEFAULT_HEADERS)
         if res.status_code in [200, 201]:
@@ -113,6 +94,10 @@ class DoubanBookLoader:
             book = self.book_parser.parse_book(url, book_detail_content.decode("utf8"))
         return book
 
+    def random_sleep(self):
+        random_sec = random.random() / 10
+        print("Random sleep time {}s".format(random_sec))
+        time.sleep(random_sec)
 
 class DoubanBookHtmlParser:
     def __init__(self):
