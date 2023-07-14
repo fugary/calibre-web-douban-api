@@ -1,6 +1,8 @@
 import random
 import re
 import time
+import dataclasses
+import urllib
 
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,15 +12,24 @@ from functools import lru_cache
 
 from cps.services.Metadata import Metadata, MetaSourceInfo, MetaRecord
 
-DOUBAN_SEARCH_JSON_URL = "https://www.douban.com/j/search" # 最新豆瓣屏蔽此url
+from cps.search_metadata import meta
+from flask import request, Response
+
+# 是否自动代理封面地址
+DOUBAN_PROXY_COVER = True
+# 如果自动计算的服务器地址不正确，可以填写自己的calibre-web地址，参考：http://nas_ip:8083/
+DOUBAN_PROXY_COVER_HOST_URL = ''
+DOUBAN_PROXY_COVER_PATH = 'metadata/douban_cover?cover='
 DOUBAN_SEARCH_URL = "https://www.douban.com/search"
+DOUBAN_BASE = "https://book.douban.com/"
 DOUBAN_BOOK_CAT = "1001"
 DOUBAN_BOOK_CACHE_SIZE = 500  # 最大缓存数量
 DOUBAN_CONCURRENCY_SIZE = 5  # 并发查询数
 DOUBAN_BOOK_URL_PATTERN = re.compile(".*/subject/(\\d+)/?")
 DEFAULT_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3573.0 Safari/537.36',
-    'Accept-Encoding': 'gzip, deflate'
+    'Accept-Encoding': 'gzip, deflate',
+    'Referer': DOUBAN_BASE
 }
 PROVIDER_NAME = "New Douban Books"
 PROVIDER_ID = "new_douban"
@@ -35,6 +46,24 @@ class NewDouban(Metadata):
     def search(self, query: str, generic_cover: str = "", locale: str = "en"):
         if self.active:
             return self.searcher.search_books(query)
+
+
+@dataclasses.dataclass
+class DoubanMetaRecord(MetaRecord):
+
+    def __getattribute__(self, item):  # cover通过本地服务代理访问
+        if item == 'cover' and DOUBAN_PROXY_COVER:
+            cover_url = super().__getattribute__(item)
+            if cover_url:
+                try:
+                    host_url = DOUBAN_PROXY_COVER_HOST_URL
+                    if not host_url and request.host_url:
+                        host_url = request.host_url
+                    if host_url and host_url not in cover_url:
+                        self.cover = host_url + DOUBAN_PROXY_COVER_PATH + urllib.parse.quote(cover_url)
+                except BaseException:
+                    pass
+        return super().__getattribute__(item)
 
 
 class DoubanBookSearcher:
@@ -61,9 +90,8 @@ class DoubanBookSearcher:
             for link in alist:
                 href = link.attrib['href']
                 parsed = self.calc_url(href)
-                if parsed:
-                    if len(book_urls) < DOUBAN_CONCURRENCY_SIZE:
-                        book_urls.append(parsed)
+                if parsed and len(book_urls) < DOUBAN_CONCURRENCY_SIZE:
+                    book_urls.append(parsed)
         return book_urls
 
     def search_books(self, query):
@@ -106,7 +134,7 @@ class DoubanBookHtmlParser:
         self.tag_pattern = re.compile("criteria = '(.+)'")
 
     def parse_book(self, url, book_content):
-        book = MetaRecord(
+        book = DoubanMetaRecord(
             id="",
             title="",
             authors=[],
@@ -200,3 +228,10 @@ class DoubanBookHtmlParser:
             if not text:
                 text = self.get_text(element.getnext(), default_str)
         return text if text else default_str
+
+
+@meta.route("/metadata/douban_cover", methods=["GET"])
+def proxy_douban_cover():
+    cover_url = urllib.parse.unquote(request.args.get('cover'))
+    res = requests.get(cover_url, headers=DEFAULT_HEADERS)
+    return Response(res.content, mimetype=res.headers['Content-Type'])
