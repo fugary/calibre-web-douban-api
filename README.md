@@ -1,5 +1,8 @@
 # calibre-web-douban-api
 
+**2023-07-15**
+最新豆瓣屏蔽直接访问封面图片，自动实现使用本地代理封面图片，保存时使用requests下载并保存
+
 **2022-10-08**
 
 原douban列表url被屏蔽，老版本不能访问，建议更新最新的[NewDouban.py](https://github.com/fugary/calibre-web-douban-api/releases/download/v1.1.0/NewDouban.py)
