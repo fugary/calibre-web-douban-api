@@ -14,6 +14,7 @@ from cps.services.Metadata import Metadata, MetaSourceInfo, MetaRecord
 
 from cps.search_metadata import meta
 from flask import request, Response
+from cps import helper
 
 # 是否自动代理封面地址
 DOUBAN_PROXY_COVER = True
@@ -22,6 +23,7 @@ DOUBAN_PROXY_COVER_HOST_URL = ''
 DOUBAN_PROXY_COVER_PATH = 'metadata/douban_cover?cover='
 DOUBAN_SEARCH_URL = "https://www.douban.com/search"
 DOUBAN_BASE = "https://book.douban.com/"
+DOUBAN_COVER_DOMAIN = 'doubanio.com'
 DOUBAN_BOOK_CAT = "1001"
 DOUBAN_BOOK_CACHE_SIZE = 500  # 最大缓存数量
 DOUBAN_CONCURRENCY_SIZE = 5  # 并发查询数
@@ -41,11 +43,34 @@ class NewDouban(Metadata):
 
     def __init__(self):
         self.searcher = DoubanBookSearcher()
+        self.hack_helper_cover()
         super().__init__()
 
     def search(self, query: str, generic_cover: str = "", locale: str = "en"):
         if self.active:
             return self.searcher.search_books(query)
+
+    @staticmethod
+    def hack_helper_cover():
+        """
+        覆盖helper.save_cover_from_url方法实现豆瓣的封面下载
+        :return:
+        """
+        save_cover = helper.save_cover_from_url
+
+        def new_save_cover(url, book_path):
+            if DOUBAN_COVER_DOMAIN in url:
+                cover_url = url
+                if DOUBAN_PROXY_COVER:
+                    component = urllib.parse.urlparse(url)
+                    query = urllib.parse.parse_qs(component.query)
+                    cover_url = urllib.parse.unquote(query.get('cover')[0])
+                res = requests.get(cover_url, headers=DEFAULT_HEADERS)
+                return helper.save_cover(res, book_path)
+            else:
+                return save_cover(url, book_path)
+
+        helper.save_cover_from_url = new_save_cover
 
 
 @dataclasses.dataclass
@@ -232,6 +257,10 @@ class DoubanBookHtmlParser:
 
 @meta.route("/metadata/douban_cover", methods=["GET"])
 def proxy_douban_cover():
+    """
+    代理豆瓣封面展示
+    :return:
+    """
     cover_url = urllib.parse.unquote(request.args.get('cover'))
     res = requests.get(cover_url, headers=DEFAULT_HEADERS)
     return Response(res.content, mimetype=res.headers['Content-Type'])
