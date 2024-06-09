@@ -22,7 +22,10 @@
 
 此应用是基于Python抓取网页的形式获取书籍信息，频率过高访问可能被屏蔽。
 
-参考文档：https://fugary.com/?p=238
+参考文档：
+
+https://fugary.com/?p=238
+
 https://fugary.com/?p=532
 
 **新版calibre-web 0.6.17以上使用**
