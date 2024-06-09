@@ -6,7 +6,7 @@
 
 **2022-10-08**
 
-原douban列表url被屏蔽，老版本不能访问，建议更新最新的[NewDouban.py](https://github.com/fugary/calibre-web-douban-api/releases/download/v1.1.0/NewDouban.py)
+原douban列表url被屏蔽，老版本不能访问，建议更新最新的[NewDouban.py](https://github.com/fugary/calibre-web-douban-api/releases/latest)
 
 **2022-08-10**
 
